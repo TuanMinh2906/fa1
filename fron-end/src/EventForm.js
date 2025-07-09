@@ -17,20 +17,24 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
   });
 
   const [newBlock, setNewBlock] = useState({ type: 'text', data: '' });
-
   const token = localStorage.getItem('token');
 
-  // Nếu có dữ liệu từ initialData (edit mode) → nạp vào form
   useEffect(() => {
     if (initialData) {
       setFormData({
         title: initialData.title || '',
         subject: initialData.subject || '',
-        assignedDate: new Date(initialData.date) || new Date(),
-        contentBlocks: initialData.contentBlocks || [],
+        assignedDate: initialData.assignedDate ? new Date(initialData.assignedDate) : new Date(),
+        contentBlocks: (initialData.contentBlocks || []).map(block => ({
+          ...block,
+          data: typeof block.data === 'object' && block.data?.text ? block.data.text : block.data
+        })),
       });
     } else if (selectedDate) {
-      setFormData((prev) => ({ ...prev, assignedDate: new Date(selectedDate) }));
+      setFormData(prev => ({
+        ...prev,
+        assignedDate: new Date(selectedDate),
+      }));
     }
   }, [initialData, selectedDate]);
 
@@ -63,20 +67,24 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       const payload = {
         ...formData,
+        assignedDate: formData.assignedDate.toISOString(),
+        contentBlocks: formData.contentBlocks.map(block => ({
+          type: block.type,
+          data: { text: block.data }
+        })),
         calendarId,
       };
 
       if (initialData?.id) {
-        // 👇 EDIT mode
-        await axios.patch(`http://localhost:8003/api/notes/${initialData.id}`, payload, {
+        await axios.put(`http://localhost:8003/api/notes/${initialData.id}`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
         alert('Note updated successfully!');
       } else {
-        // 👇 ADD mode
         await axios.post('http://localhost:8003/api/notes', payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -99,14 +107,16 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
         </Typography>
 
         <TextField
-          fullWidth margin="normal"
+          fullWidth
+          margin="normal"
           label="Title"
           value={formData.title}
           onChange={handleChange('title')}
         />
 
         <TextField
-          fullWidth margin="normal"
+          fullWidth
+          margin="normal"
           label="Subject"
           value={formData.subject}
           onChange={handleChange('subject')}
@@ -115,9 +125,11 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <DatePicker
             label="Assigned Date"
-            value={formData.assignedDate}
+            value={formData.assignedDate instanceof Date && !isNaN(formData.assignedDate) ? formData.assignedDate : null}
             onChange={handleDateChange}
-            renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+            renderInput={(params) => (
+              <TextField {...params} fullWidth margin="normal" error={!formData.assignedDate} />
+            )}
           />
         </LocalizationProvider>
 
@@ -158,8 +170,8 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
                 block.type === 'text'
                   ? 'primary.main'
                   : block.type === 'code'
-                  ? 'secondary.main'
-                  : 'success.main',
+                    ? 'secondary.main'
+                    : 'success.main',
               backgroundColor: '#f9f9f9',
               borderRadius: 1,
               position: 'relative',
@@ -167,7 +179,7 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
           >
             <Typography variant="subtitle2">[{block.type.toUpperCase()}]</Typography>
             <Typography sx={{ mt: 1, whiteSpace: 'pre-line' }}>
-              {block.data}
+              {typeof block.data === 'object' ? block.data?.text : block.data}
             </Typography>
 
             <IconButton

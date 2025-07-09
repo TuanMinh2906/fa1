@@ -30,6 +30,7 @@ function Login() {
         throw new Error("Missing login data");
       }
 
+      // ✅ Lưu token và thông tin user vào localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('userId', userId);
       localStorage.setItem('calendarId', calendarId);

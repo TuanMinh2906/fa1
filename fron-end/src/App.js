@@ -22,7 +22,7 @@ function AppWrapper() {
           <Route path="/" element={<Navigate to="/login" />} />
           <Route path="/calendar" element={<CalendarBoard />} />
           <Route path="/add-event" element={<AddEvent />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:userId" element={<Profile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/chart" element={<Chart />} />

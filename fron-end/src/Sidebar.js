@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState} from 'react';
 import {
   FaUser, FaSearch, FaUsers, FaBell,
   FaChartPie, FaStickyNote, FaCube,
@@ -9,7 +9,7 @@ import {
   Box, TextField, Paper, Typography, Divider,
   Dialog, DialogActions, DialogContent,
   DialogContentText, DialogTitle, Button,
-  Menu, MenuItem, ListItemIcon
+  Menu, MenuItem, ListItemIcon, Avatar, Badge
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import Settings from '@mui/icons-material/Settings';
@@ -19,28 +19,87 @@ import Logout from '@mui/icons-material/Logout';
 
 function Sidebar() {
   const navigate = useNavigate();
-  const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
   const [openLogoutConfirm, setOpenLogoutConfirm] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const openUserMenu = Boolean(anchorEl);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [selectedIconIndex, setSelectedIconIndex] = useState(null);
+  const [showSearchType, setShowSearchType] = useState(null);
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false); // ✅ Notification Panel toggle
+
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [requestCount, setRequestCount] = useState(0);
+
+  const fetchFriendRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8003/api/users/friends/requests', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setFriendRequests(data || []);
+      setRequestCount(data.length);
+    } catch (err) {
+      console.error('Error fetching friend requests', err);
+    }
+  };
+
+  const handleBellClick = async () => {
+    setShowSearchType(null); // tắt khung search nếu đang mở
+    setShowNotificationPanel(!showNotificationPanel);
+    await fetchFriendRequests();
+  };
+
+  const handleAccept = async (senderId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:8003/api/users/friends/accept/${senderId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setFriendRequests(prev => prev.filter(r => r._id !== senderId));
+      setRequestCount(prev => prev - 1);
+    } catch (err) {
+      console.error('Error accepting request:', err);
+    }
+  };
+
+  const handleReject = async (senderId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:8003/api/users/friends/reject/${senderId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setFriendRequests(prev => prev.filter(r => r._id !== senderId));
+      setRequestCount(prev => prev - 1);
+    } catch (err) {
+      console.error('Error rejecting request:', err);
+    }
+  };
 
   const icons = [
-    {
-      icon: FaUser,
-      action: (e) => setAnchorEl(e.currentTarget) // 👈 mở popup user
-    },
+    { icon: FaUser, action: (e) => setAnchorEl(e.currentTarget) },
     {
       icon: FaSearch,
-      action: () => setShowSearch(!showSearch)
+      action: () => {
+        setShowSearchType(showSearchType === 'general' ? null : 'general');
+        setShowNotificationPanel(false);
+        setQuery('');
+        setSearchResults([]);
+      }
     },
-    { icon: FaUsers },
-    { icon: FaBell,
-      action: () => setShowNotifications(!showNotifications) 
-     },
+    {
+      icon: FaUsers,
+      action: () => {
+        setShowSearchType(showSearchType === 'user' ? null : 'user');
+        setShowNotificationPanel(false);
+        setQuery('');
+        setSearchResults([]);
+      }
+    },
+    { icon: FaBell, action: handleBellClick },
     { icon: FaChartPie, route: '/chart' },
     { icon: FaStickyNote },
     { icon: FaCube },
@@ -48,114 +107,123 @@ function Sidebar() {
     { icon: FaCog }
   ];
 
-  const dummyData = [
-    { id: 1, name: 'Note 1 - Meeting notes' },
-    { id: 2, name: 'Note 2 - Project plan' },
-    { id: 3, name: 'Note 3 - Todo list' },
-  ];
+  const getNoteMatches = async (queryText) => {
+    try {
+      const userId = localStorage.getItem('userId');
+      if (!userId) return [];
 
-  const handleSearch = (e) => {
+      const calendarRes = await fetch(`http://localhost:8003/api/calendar/user/${userId}`);
+      const { calendarId } = await calendarRes.json();
+      if (!calendarId) return [];
+
+      const notesRes = await fetch(`http://localhost:8003/api/calendar/${calendarId}/notes`);
+      const notes = await notesRes.json();
+
+      return notes
+        .filter(note => note.title.toLowerCase().includes(queryText.toLowerCase()))
+        .map(note => ({
+          type: 'note',
+          _id: note._id,
+          name: note.title,
+          date: note.assignedDate
+        }));
+    } catch (err) {
+      console.error('Error fetching notes:', err);
+      return [];
+    }
+  };
+
+  const getUserMatches = async (queryText) => {
+    try {
+      const userRes = await fetch('http://localhost:8003/api/users');
+      const users = await userRes.json();
+      return users
+        .filter((user) => user.userName.toLowerCase().includes(queryText.toLowerCase()))
+        .map((user) => ({ type: 'user', ...user }));
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      return [];
+    }
+  };
+
+  const handleSearch = async (e) => {
     const value = e.target.value;
     setQuery(value);
-    const filtered = dummyData.filter(item =>
-      item.name.toLowerCase().includes(value.toLowerCase())
-    );
-    setResults(filtered);
+    if (value.trim() === '') return setSearchResults([]);
+
+    if (showSearchType === 'general') {
+      const [notes, users] = await Promise.all([
+        getNoteMatches(value),
+        getUserMatches(value)
+      ]);
+      setSearchResults([...notes, ...users]);
+    } else if (showSearchType === 'user') {
+      const users = await getUserMatches(value);
+      setSearchResults(users);
+    }
   };
 
-  const handleLogout = () => {
-    setOpenLogoutConfirm(true);
-  };
-
+  const handleLogout = () => setOpenLogoutConfirm(true);
   const confirmLogout = () => {
     setOpenLogoutConfirm(false);
+    localStorage.clear();
     navigate('/login');
   };
-
-  const cancelLogout = () => {
-    setOpenLogoutConfirm(false);
-  };
+  const cancelLogout = () => setOpenLogoutConfirm(false);
 
   return (
     <>
       <Box sx={{ display: 'flex' }}>
-        {/* Sidebar cố định */}
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '60px',
-            height: '100vh',
-            bgcolor: '#f5f5f5',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            pt: 2,
-            pb: 2,
-            boxShadow: 2,
-            zIndex: 1000,
-          }}
-        >
-          {/* Các icon điều hướng */}
+        {/* Sidebar */}
+        <Box sx={{
+          position: 'fixed', top: 0, left: 0, width: '60px', height: '100vh',
+          bgcolor: '#f5f5f5', display: 'flex', flexDirection: 'column',
+          justifyContent: 'space-between', alignItems: 'center', pt: 2, pb: 2,
+          boxShadow: 2, zIndex: 1000
+        }}>
           <Box>
             {icons.map(({ icon: Icon, route, action }, index) => (
               <Box
                 key={index}
                 onClick={(e) => {
                   setSelectedIconIndex(index);
-                  setShowSearch(false);
-                  setShowNotifications(false);
                   setAnchorEl(null);
                   if (action) action(e);
                   if (route) navigate(route);
                 }}
                 sx={{
-                    my: 1.5,
-                    fontSize: 24,
-                    cursor: 'pointer',
-                    color: '#333',
-                    backgroundColor: selectedIconIndex === index ? '#e0e0e0' : 'transparent', // 👈 nền xám nhạt
-                    borderRadius: 2,
-                    width: 40,
-                    height: 40,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderLeft: selectedIconIndex === index ? '4px solid #1976d2' : '4px solid transparent', // 👈 viền trái xanh
-                '&:hover': {
-                    color: '#1976d2',
-                  }
-            }}
+                  my: 1.5, fontSize: 24, cursor: 'pointer', color: '#333',
+                  backgroundColor: selectedIconIndex === index ? '#e0e0e0' : 'transparent',
+                  borderRadius: 2, width: 40, height: 40,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderLeft: selectedIconIndex === index ? '4px solid #1976d2' : '4px solid transparent',
+                  '&:hover': { color: '#1976d2' }
+                }}
               >
-                <Icon />
+                {Icon === FaBell ? (
+                  <Badge badgeContent={requestCount} color="error">
+                    <Icon />
+                  </Badge>
+                ) : (
+                  <Icon />
+                )}
               </Box>
             ))}
           </Box>
 
-          {/* Icon Logout */}
-          <Box
-            onClick={handleLogout}
-            sx={{
-              fontSize: 24,
-              cursor: 'pointer',
-              color: '#e53935',
-              mb: 3,
-              '&:hover': {
-                color: '#c62828'
-              }
-            }}
-          >
+          <Box onClick={handleLogout} sx={{
+            fontSize: 24, cursor: 'pointer', color: '#e53935', mb: 3,
+            '&:hover': { color: '#c62828' }
+          }}>
             <FaSignOutAlt />
           </Box>
         </Box>
 
-        {/* Form search hiện bên phải sidebar */}
-        {showSearch && (
+        {/* 🔍 Search Panel */}
+        {showSearchType && (
           <Paper elevation={3} sx={{ p: 2, width: 300, ml: '70px', mt: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Search Notes
+              {showSearchType === 'general' ? 'Search Notes & Users' : 'Search Users'}
             </Typography>
             <TextField
               label="Search..."
@@ -166,45 +234,58 @@ function Sidebar() {
               size="small"
             />
             <Divider sx={{ my: 2 }} />
-            {results.length > 0 ? (
-              results.map((item) => (
-                <Box key={item.id} sx={{ mb: 1 }}>
-                  <Typography variant="body2">{item.name}</Typography>
+            {searchResults.length > 0 ? (
+              searchResults.map((item, index) => (
+                <Box key={index} sx={{ mb: 1 }}>
+                  {item.type === 'note' && (
+                    <Typography variant="body2">📝 {item.name} - {item.date}</Typography>
+                  )}
+                  {item.type === 'user' && (
+                    <Box
+                      sx={{ cursor: 'pointer', '&:hover': { color: '#1976d2', textDecoration: 'underline' } }}
+                      onClick={() => navigate(`/profile/${item._id}`)}
+                    >
+                      <Typography variant="body2">👤 {item.userName} ({item.email})</Typography>
+                    </Box>
+                  )}
                 </Box>
               ))
             ) : (
-              <Typography variant="body2" color="text.secondary">
-                No results found.
-              </Typography>
+              <Typography variant="body2" color="text.secondary">No results found.</Typography>
             )}
           </Paper>
         )}
 
-        {showNotifications && (
-          <Paper elevation={3} sx={{ p: 2, width: 300, ml: '70px', mt: 2}}>
-            <Typography variant="h6" gutterBottom>
-              Notifications
-            </Typography>
-           <Divider sx={{ mb: 1 }} />
-  </Paper>
-)} 
+        {/* 🔔 Notification Panel */}
+        {showNotificationPanel && (
+          <Paper elevation={3} sx={{ p: 2, width: 300, ml: '70px', mt: 2 }}>
+            <Typography variant="h6" gutterBottom>Friend Requests</Typography>
+            <Divider sx={{ mb: 1 }} />
+            {friendRequests.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">No friend requests</Typography>
+            ) : (
+              friendRequests.map(user => (
+                <Box key={user._id} display="flex" alignItems="center" mb={1}>
+                  <Avatar src={user.profilePicture || 'https://via.placeholder.com/40'} sx={{ mr: 1 }} />
+                  <Box flexGrow={1}>
+                    <Typography>{user.userName}</Typography>
+                    <Typography variant="caption">{user.email}</Typography>
+                  </Box>
+                  <Button size="small" onClick={() => handleAccept(user._id)}>Accept</Button>
+                  <Button size="small" color="error" onClick={() => handleReject(user._id)}>Reject</Button>
+                </Box>
+              ))
+            )}
+          </Paper>
+        )}
       </Box>
 
-      {/* Popup user menu */}
+      {/* User Menu */}
       <Menu
         anchorEl={anchorEl}
         open={openUserMenu}
         onClose={() => setAnchorEl(null)}
-        PaperProps={{
-          elevation: 4,
-          sx: {
-            mt: 1.5,
-            overflow: 'visible',
-            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.2))',
-            width: 230,
-            borderRadius: 2
-          },
-        }}
+        PaperProps={{ sx: { width: 230, borderRadius: 2 } }}
         transformOrigin={{ horizontal: 'left', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
@@ -236,7 +317,7 @@ function Sidebar() {
         </MenuItem>
       </Menu>
 
-      {/* Xác nhận logout */}
+      {/* Logout Confirmation */}
       <Dialog open={openLogoutConfirm} onClose={cancelLogout}>
         <DialogTitle>Confirm Logout</DialogTitle>
         <DialogContent>
