@@ -1,4 +1,4 @@
-import React, { useState} from 'react';
+import React, { useState } from 'react';
 import {
   FaUser, FaSearch, FaUsers, FaBell,
   FaChartPie, FaStickyNote, FaCube,
@@ -26,8 +26,7 @@ function Sidebar() {
   const openUserMenu = Boolean(anchorEl);
   const [selectedIconIndex, setSelectedIconIndex] = useState(null);
   const [showSearchType, setShowSearchType] = useState(null);
-  const [showNotificationPanel, setShowNotificationPanel] = useState(false); // ✅ Notification Panel toggle
-
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [friendRequests, setFriendRequests] = useState([]);
   const [requestCount, setRequestCount] = useState(0);
 
@@ -46,7 +45,7 @@ function Sidebar() {
   };
 
   const handleBellClick = async () => {
-    setShowSearchType(null); // tắt khung search nếu đang mở
+    setShowSearchType(null);
     setShowNotificationPanel(!showNotificationPanel);
     await fetchFriendRequests();
   };
@@ -80,7 +79,7 @@ function Sidebar() {
   };
 
   const icons = [
-    { icon: FaUser, action: (e) => setAnchorEl(e.currentTarget) },
+    { icon: FaUser, action: () => navigate('/me') },
     {
       icon: FaSearch,
       action: () => {
@@ -93,7 +92,7 @@ function Sidebar() {
     {
       icon: FaUsers,
       action: () => {
-        setShowSearchType(showSearchType === 'user' ? null : 'user');
+        setShowSearchType(showSearchType === 'friends' ? null : 'friends');
         setShowNotificationPanel(false);
         setQuery('');
         setSearchResults([]);
@@ -138,10 +137,26 @@ function Sidebar() {
       const userRes = await fetch('http://localhost:8003/api/users');
       const users = await userRes.json();
       return users
-        .filter((user) => user.userName.toLowerCase().includes(queryText.toLowerCase()))
-        .map((user) => ({ type: 'user', ...user }));
+        .filter(user => user.userName.toLowerCase().includes(queryText.toLowerCase()))
+        .map(user => ({ type: 'user', ...user }));
     } catch (err) {
       console.error('Error fetching users:', err);
+      return [];
+    }
+  };
+
+  const getFriendMatches = async (queryText) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8003/api/users/friends/list', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const friends = await res.json();
+      return friends
+        .filter(friend => friend.userName.toLowerCase().includes(queryText.toLowerCase()))
+        .map(friend => ({ type: 'user', ...friend }));
+    } catch (err) {
+      console.error('Error fetching friends:', err);
       return [];
     }
   };
@@ -157,9 +172,9 @@ function Sidebar() {
         getUserMatches(value)
       ]);
       setSearchResults([...notes, ...users]);
-    } else if (showSearchType === 'user') {
-      const users = await getUserMatches(value);
-      setSearchResults(users);
+    } else if (showSearchType === 'friends') {
+      const friends = await getFriendMatches(value);
+      setSearchResults(friends);
     }
   };
 
@@ -219,11 +234,11 @@ function Sidebar() {
           </Box>
         </Box>
 
-        {/* 🔍 Search Panel */}
+        {/* Search Panel */}
         {showSearchType && (
           <Paper elevation={3} sx={{ p: 2, width: 300, ml: '70px', mt: 2 }}>
             <Typography variant="h6" gutterBottom>
-              {showSearchType === 'general' ? 'Search Notes & Users' : 'Search Users'}
+              {showSearchType === 'general' ? 'Search Notes & Users' : 'Search Friends'}
             </Typography>
             <TextField
               label="Search..."
@@ -256,7 +271,7 @@ function Sidebar() {
           </Paper>
         )}
 
-        {/* 🔔 Notification Panel */}
+        {/* Notification Panel */}
         {showNotificationPanel && (
           <Paper elevation={3} sx={{ p: 2, width: 300, ml: '70px', mt: 2 }}>
             <Typography variant="h6" gutterBottom>Friend Requests</Typography>
@@ -317,7 +332,7 @@ function Sidebar() {
         </MenuItem>
       </Menu>
 
-      {/* Logout Confirmation */}
+      {/* Logout Confirm */}
       <Dialog open={openLogoutConfirm} onClose={cancelLogout}>
         <DialogTitle>Confirm Logout</DialogTitle>
         <DialogContent>

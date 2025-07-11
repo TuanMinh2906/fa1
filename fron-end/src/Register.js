@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Container,
+  TextField,
+  Button,
+  Typography,
+  Box,
+  Paper,
+} from '@mui/material';
 
 function Register() {
   const navigate = useNavigate();
@@ -43,7 +51,7 @@ function Register() {
 
       if (response.ok) {
         alert('Registration successful!');
-        navigate('/'); // chuyển về trang login
+        navigate('/');
       } else {
         alert(data.message || 'Registration failed.');
       }
@@ -54,47 +62,63 @@ function Register() {
   };
 
   return (
-    <div className="register-page">
-      <header className="register-header">
-        <h1 className="register-logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
+    <Container maxWidth="sm">
+      <Box mt={5} textAlign="center">
+        <Typography
+          variant="h3"
+          component="h1"
+          onClick={handleLogoClick}
+          sx={{ cursor: 'pointer', fontWeight: 'bold', mb: 3 }}
+        >
           Planova
-        </h1>
-      </header>
+        </Typography>
+      </Box>
 
-      <div className="register-form-container">
-        <form className="register-form" onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Username"
-            className="register-input"
+      <Paper elevation={3} sx={{ p: 4 }}>
+        <form onSubmit={handleSubmit}>
+          <TextField
+            label="Username"
+            fullWidth
+            margin="normal"
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
           />
-          <input
+          <TextField
+            label="Email"
             type="email"
-            placeholder="Email"
-            className="register-input"
+            fullWidth
+            margin="normal"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <input
+          <TextField
+            label="Password"
             type="password"
-            placeholder="Password"
-            className="register-input"
+            fullWidth
+            margin="normal"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <input
+          <TextField
+            label="Confirm Password"
             type="password"
-            placeholder="Confirm Password"
-            className="register-input"
+            fullWidth
+            margin="normal"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-          <button type="submit" className="register-submit-button">Register</button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            fullWidth
+            sx={{ mt: 2 }}
+          >
+            Register
+          </Button>
         </form>
-      </div>
-    </div>
+      </Paper>
+    </Container>
   );
 }
 

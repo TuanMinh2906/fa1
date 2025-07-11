@@ -17,6 +17,8 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
   });
 
   const [newBlock, setNewBlock] = useState({ type: 'text', data: '' });
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -178,17 +180,61 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
             }}
           >
             <Typography variant="subtitle2">[{block.type.toUpperCase()}]</Typography>
-            <Typography sx={{ mt: 1, whiteSpace: 'pre-line' }}>
-              {typeof block.data === 'object' ? block.data?.text : block.data}
-            </Typography>
 
-            <IconButton
-              onClick={() => handleRemoveBlock(idx)}
-              size="small"
-              sx={{ position: 'absolute', top: 8, right: 8 }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
+            {editingIndex === idx ? (
+              <>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={editingContent}
+                  onChange={(e) => setEditingContent(e.target.value)}
+                  sx={{ mt: 1 }}
+                />
+                <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    size="small"
+                    onClick={() => {
+                      const updated = [...formData.contentBlocks];
+                      updated[idx].data = editingContent;
+                      setFormData({ ...formData, contentBlocks: updated });
+                      setEditingIndex(null);
+                    }}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    size="small"
+                    onClick={() => setEditingIndex(null)}
+                  >
+                    Cancel
+                  </Button>
+                </Box>
+              </>
+            ) : (
+              <Typography sx={{ mt: 1, whiteSpace: 'pre-line' }}>
+                {typeof block.data === 'object' ? block.data?.text : block.data}
+              </Typography>
+            )}
+
+            <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
+              <IconButton onClick={() => handleRemoveBlock(idx)} size="small">
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+              <Button
+                size="small"
+                onClick={() => {
+                  setEditingIndex(idx);
+                  setEditingContent(block.data);
+                }}
+              >
+                Edit
+              </Button>
+            </Box>
           </Box>
         ))}
 

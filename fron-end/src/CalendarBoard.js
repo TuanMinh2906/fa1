@@ -284,7 +284,6 @@ function CalendarBoard() {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog thêm/sửa sự kiện */}
       <Dialog open={addEventOpen} onClose={handleAddEventClose} maxWidth="sm" fullWidth>
         <DialogTitle>{editMode ? 'Edit Event' : 'Add New Event'}</DialogTitle>
         <DialogContent dividers>
@@ -293,7 +292,7 @@ function CalendarBoard() {
             calendarId={calendarId}
             onClose={handleAddEventClose}
             onAddSuccess={handleAddEventSuccess}
-            initialData={eventToEdit} // thêm dòng này để truyền dữ liệu edit
+            initialData={eventToEdit} 
           />
         </DialogContent>
       </Dialog>

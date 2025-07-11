@@ -18,8 +18,9 @@ function Profile() {
   const { userId } = useParams();
   const [tabIndex, setTabIndex] = useState(0);
   const [user, setUser] = useState(null);
-  const [isRequestSent, setIsRequestSent] = useState(false); // ✅ Trạng thái đã gửi lời mời
-  const [isLoading, setIsLoading] = useState(false); // ✅ Trạng thái loading gửi request
+  const [isFriend, setIsFriend] = useState(false);
+  const [isRequestSent, setIsRequestSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleTabChange = (event, newValue) => {
@@ -37,7 +38,23 @@ function Profile() {
       }
     };
 
+    const checkIfFriend = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`http://localhost:8003/api/users/friends/list`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await res.json();
+        const alreadyFriend = data.some(friend => String(friend._id) === String(userId));
+        setIsFriend(alreadyFriend);
+      } catch (err) {
+        console.error('Failed to check friendship:', err);
+      }
+    };
+
     fetchUser();
+    checkIfFriend();
   }, [userId]);
 
   const handleAddFriend = async () => {
@@ -62,6 +79,33 @@ function Profile() {
       }
     } catch (err) {
       setError('Network error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUnfriend = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:8003/api/users/friends/unfriend/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        setIsFriend(false);         // Gỡ trạng thái bạn bè
+        setIsRequestSent(false);    // Reset lại nếu trước đó từng gửi request
+      } else {
+        setError(result.message || 'Failed to unfriend');
+      }
+    } catch (err) {
+      setError('Network error while unfriending');
     } finally {
       setIsLoading(false);
     }
@@ -100,18 +144,32 @@ function Profile() {
           </Typography>
           <Typography variant="body2">{user.email}</Typography>
 
-          {/* 👇 Nút gửi lời mời kết bạn */}
-          <Box sx={{ mt: 1 }}>
-            {isRequestSent ? (
-              <Button variant="outlined" disabled>✅ Request Sent</Button>
-            ) : (
-              <Button variant="outlined" onClick={handleAddFriend} disabled={isLoading}>
-                {isLoading ? 'Sending...' : 'Add Friend'}
-              </Button>
+          <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+            {isFriend && (
+              <>
+                <Button variant="contained" disabled>👥 Friend</Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={handleUnfriend}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Unfriending...' : '❌ Unfriend'}
+                </Button>
+              </>
+            )}
+
+            {!isFriend && (
+              isRequestSent ? (
+                <Button variant="outlined" disabled>✅ Request Sent</Button>
+              ) : (
+                <Button variant="outlined" onClick={handleAddFriend} disabled={isLoading}>
+                  {isLoading ? 'Sending...' : 'Add Friend'}
+                </Button>
+              )
             )}
           </Box>
 
-          {/* 👇 Hiển thị lỗi nếu có */}
           {error && (
             <Typography color="error" variant="body2" sx={{ mt: 1 }}>
               {error}

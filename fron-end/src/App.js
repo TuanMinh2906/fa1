@@ -8,6 +8,7 @@ import Login from './Login';
 import Register from './Register';
 import Chart from './Chart';
 import AddEventForm from './EventForm';
+import MyProfile from './MyProfile';
 import './style/App.css';
 
 function AppWrapper() {
@@ -26,7 +27,8 @@ function AppWrapper() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/chart" element={<Chart />} />
-          <Route path="/form" element={<AddEventForm />} />
+          <Route path="/form" element={<AddEventForm />} />  
+          <Route path="/me" element={<MyProfile />} />
         </Routes>
       </div>
     </div>
