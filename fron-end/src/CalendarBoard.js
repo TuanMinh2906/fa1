@@ -92,7 +92,7 @@ function CalendarBoard() {
         id: note._id,
         title: note.title,
         description: note.contentBlocks?.map((block) =>
-          typeof block.data === 'string' ? block.data : JSON.stringify(block.data)
+          block?.data?.text || ''
         ).join('\n') || 'No description',
         date: new Date(note.assignedDate).toISOString().split('T')[0],
         location: note.location || '',
@@ -235,7 +235,6 @@ function CalendarBoard() {
         />
       </Paper>
 
-      {/* Dialog xem chi tiết */}
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {selectedEvent?.title || 'Event Details'}
@@ -292,7 +291,7 @@ function CalendarBoard() {
             calendarId={calendarId}
             onClose={handleAddEventClose}
             onAddSuccess={handleAddEventSuccess}
-            initialData={eventToEdit} 
+            initialData={eventToEdit}
           />
         </DialogContent>
       </Dialog>

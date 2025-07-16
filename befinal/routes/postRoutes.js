@@ -4,7 +4,7 @@ const postAction = require('../action/postAction');
 const { verifyToken } = require('../middlewares/auth');
 
 // Post CRUD
-router.post('/', verifyToken, postAction.createPost);
+router.post('/createpost', verifyToken, postAction.createPost);
 router.get('/', postAction.getAllPosts);
 router.put('/:postId', verifyToken, postAction.editPost);
 router.delete('/:postId', verifyToken, postAction.deletePost);

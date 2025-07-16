@@ -16,8 +16,8 @@ const userSchema = new mongoose.Schema({
         match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address.']
     },
     profilePicture: {
-        type: [String], // Array of profile image URLs
-        default: []
+        type: String,
+        default: "" // ✅ Đã sửa: từ [] => ""
     },
     calendarId: {
         type: mongoose.Schema.Types.ObjectId,

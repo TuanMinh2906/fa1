@@ -18,10 +18,13 @@ function Profile() {
   const { userId } = useParams();
   const [tabIndex, setTabIndex] = useState(0);
   const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
   const [isFriend, setIsFriend] = useState(false);
   const [isRequestSent, setIsRequestSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const token = localStorage.getItem('token');
 
   const handleTabChange = (event, newValue) => {
     setTabIndex(newValue);
@@ -40,7 +43,6 @@ function Profile() {
 
     const checkIfFriend = async () => {
       try {
-        const token = localStorage.getItem('token');
         const res = await fetch(`http://localhost:8003/api/users/friends/list`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -53,15 +55,34 @@ function Profile() {
       }
     };
 
+    const fetchUserPosts = async () => {
+      try {
+        const res = await fetch(`http://localhost:8003/api/posts`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          const filtered = data.filter(post => post.user?._id === userId);
+          setPosts(filtered);
+        } else {
+          console.error('Failed to fetch posts');
+        }
+      } catch (err) {
+        console.error('Failed to fetch posts:', err);
+      }
+    };
+
     fetchUser();
     checkIfFriend();
-  }, [userId]);
+    fetchUserPosts();
+  }, [userId, token]); // ✅ Đã thêm `token` vào dependency array
 
   const handleAddFriend = async () => {
     try {
       setIsLoading(true);
       setError('');
-      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:8003/api/users/friends/request/${userId}`, {
         method: 'POST',
         headers: {
@@ -88,7 +109,6 @@ function Profile() {
     try {
       setIsLoading(true);
       setError('');
-      const token = localStorage.getItem('token');
       const res = await fetch(`http://localhost:8003/api/users/friends/unfriend/${userId}`, {
         method: 'DELETE',
         headers: {
@@ -99,8 +119,8 @@ function Profile() {
       const result = await res.json();
 
       if (res.ok) {
-        setIsFriend(false);         // Gỡ trạng thái bạn bè
-        setIsRequestSent(false);    // Reset lại nếu trước đó từng gửi request
+        setIsFriend(false);
+        setIsRequestSent(false);
       } else {
         setError(result.message || 'Failed to unfriend');
       }
@@ -184,36 +204,44 @@ function Profile() {
         <Tab label="Projects" />
       </Tabs>
 
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Bio</Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                From <strong>Hanoi, Viet Nam</strong>
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+      {tabIndex === 0 && (
+        <Grid container spacing={3} sx={{ mt: 2 }}>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6">Bio</Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  From <strong>Hanoi, Viet Nam</strong>
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
 
-        <Grid item xs={12} md={8}>
-          <Paper elevation={3} sx={{ p: 2 }}>
-            <Box display="flex" alignItems="center" mb={2}>
-              <Avatar
-                src={user.avatar || 'https://via.placeholder.com/50'}
-                sx={{ width: 50, height: 50, mr: 2 }}
-              />
-              <Box>
-                <Typography fontWeight="bold">{user.userName}</Typography>
-                <Typography variant="caption">At 9:52 AM 3/7/2025</Typography>
-              </Box>
-            </Box>
-            <Typography>
-              Hey I have found this calendar template is useful very much!
-            </Typography>
-          </Paper>
+          <Grid item xs={12} md={8}>
+            {posts.length === 0 ? (
+              <Typography>No posts yet.</Typography>
+            ) : (
+              posts.map((post) => (
+                <Paper key={post._id} elevation={3} sx={{ p: 2, mb: 2 }}>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <Avatar
+                      src={user.avatar || 'https://via.placeholder.com/50'}
+                      sx={{ width: 50, height: 50, mr: 2 }}
+                    />
+                    <Box>
+                      <Typography fontWeight="bold">{user.userName}</Typography>
+                      <Typography variant="caption">
+                        At {new Date(post.createdAt).toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Typography>{post.content}</Typography>
+                </Paper>
+              ))
+            )}
+          </Grid>
         </Grid>
-      </Grid>
+      )}
     </Container>
   );
 }

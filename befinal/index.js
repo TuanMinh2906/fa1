@@ -8,7 +8,7 @@ const requestIp = require('request-ip');
 const global = require('./global');
 const connectDB = require('./database');
 require('dotenv').config();
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 // Routes
@@ -16,11 +16,13 @@ const mapRoutes = require('./routes/mapRoutes');
 const userRoutes = require('./routes/userRoutes');
 const calendarRoutes = require('./routes/calendarRoutes');
 const noteRoutes = require('./routes/noteRoutes');
-//Schema
+const postRoutes = require('./routes/postRoutes');
+
+// Schema
 const User = require('./schema/userSchema');
 const Note = require('./schema/noteSchema');
 
-//Functionality
+// Functionality
 const userAction = require('./action/user/userAction');
 const noteAction = require('./action/noteAction');
 
@@ -29,28 +31,23 @@ app.use(cors());
 app.use(requestIp.mw());
 app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
-app.use(bodyParser.json())
+app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
-    res.send('hello')
-})
+    res.send('hello');
+});
 
 // Routes use
 app.use('/api/maps', mapRoutes);
 app.use('/api/calendar', calendarRoutes);
-
-//userAction file:
 app.use('/api/users', userRoutes);
-
-//noteAction Routes
+app.use('/api/posts', postRoutes);
 app.use('/api/notes', noteRoutes);
-
 
 const testRoutes = require('./routes/test/testMiddleWareJWT');
 app.use('/api', testRoutes);
 
-
-//init server & port
+// Init server & port
 const PORT = global.binding_PORT || 8003;
 
 connectDB()
@@ -62,4 +59,3 @@ connectDB()
     .catch((err) => {
         console.error('❌ Server failed to start due to DB connection error.');
     });
-

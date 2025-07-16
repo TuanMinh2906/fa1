@@ -29,30 +29,42 @@ const createPost = async (req, res) => {
 
 // 🔹 Lấy tất cả post (hiển thị userName và avatar)
 const getAllPosts = async (req, res) => {
-    try {
-        const posts = await Post.find()
-            .populate('userId', 'userName profilePicture')
-            .sort({ createdAt: -1 });
+  try {
+    const posts = await Post.find()
+      .populate('userId', 'userName') // Chỉ lấy userName từ user
+      .sort({ createdAt: -1 });
 
-        const formattedPosts = posts.map(post => ({
-            _id: post._id,
-            content: post.content,
-            createdAt: post.createdAt,
-            user: {
-                _id: post.userId._id,
-                userName: post.userId.userName,
-                profilePicture: post.userId.profilePicture[0] || null
+    const formattedPosts = posts.map(post => {
+      const user = post.userId;
+
+      return {
+        _id: post._id,
+        content: post.content,
+        createdAt: post.createdAt,
+        user: user
+          ? {
+              _id: user._id,
+              userName: user.userName
+            }
+          : {
+              _id: null,
+              userName: 'Deleted User'
             },
-            likesCount: post.likes?.length || 0,
-            commentsCount: post.comments?.length || 0
-        }));
+        likesCount: post.likes?.length || 0,
+        commentsCount: post.comments?.length || 0
+      };
+    });
 
-        res.status(200).json(formattedPosts);
-    } catch (err) {
-        console.error('Error in getAllPosts:', err);
-        res.status(500).json({ error: 'Failed to retrieve posts' });
-    }
+    res.status(200).json(formattedPosts);
+  } catch (err) {
+    console.error('❌ Error in getAllPosts:', err.message);
+    console.error(err.stack);
+    res.status(500).json({ error: 'Failed to retrieve posts' });
+  }
 };
+
+
+
 
 // 🔹 Xóa post
 const deletePost = async (req, res) => {
@@ -185,9 +197,13 @@ const deleteComment = async (req, res) => {
 };
 
 module.exports = {
+    createPost,
+    getAllPosts,
     editPost,
     likePost,
     unlikePost,
     addComment,
-    deleteComment
+    deleteComment,
+    deletePost
 };
+

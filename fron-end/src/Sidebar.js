@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FaUser, FaSearch, FaUsers, FaBell,
   FaChartPie, FaStickyNote, FaCube,
@@ -29,6 +29,7 @@ function Sidebar() {
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [friendRequests, setFriendRequests] = useState([]);
   const [requestCount, setRequestCount] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const fetchFriendRequests = async () => {
     try {
@@ -41,6 +42,19 @@ function Sidebar() {
       setRequestCount(data.length);
     } catch (err) {
       console.error('Error fetching friend requests', err);
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      if (!userId) return;
+
+      const res = await fetch(`http://localhost:8003/api/users/${userId}`);
+      const data = await res.json();
+      setCurrentUser(data);
+    } catch (err) {
+      console.error('Error fetching current user:', err);
     }
   };
 
@@ -79,7 +93,16 @@ function Sidebar() {
   };
 
   const icons = [
-    { icon: FaUser, action: () => navigate('/me') },
+    {
+      icon: FaUser,
+      action: async (e) => {
+        setAnchorEl(e.currentTarget);
+        setSelectedIconIndex(0);
+        setShowSearchType(null);
+        setShowNotificationPanel(false);
+        await fetchCurrentUser();
+      }
+    },
     {
       icon: FaSearch,
       action: () => {
@@ -186,10 +209,13 @@ function Sidebar() {
   };
   const cancelLogout = () => setOpenLogoutConfirm(false);
 
+  useEffect(() => {
+    // avoid warning
+  }, []);
+
   return (
     <>
       <Box sx={{ display: 'flex' }}>
-        {/* Sidebar */}
         <Box sx={{
           position: 'fixed', top: 0, left: 0, width: '60px', height: '100vh',
           bgcolor: '#f5f5f5', display: 'flex', flexDirection: 'column',
@@ -234,7 +260,6 @@ function Sidebar() {
           </Box>
         </Box>
 
-        {/* Search Panel */}
         {showSearchType && (
           <Paper elevation={3} sx={{ p: 2, width: 300, ml: '70px', mt: 2 }}>
             <Typography variant="h6" gutterBottom>
@@ -271,7 +296,6 @@ function Sidebar() {
           </Paper>
         )}
 
-        {/* Notification Panel */}
         {showNotificationPanel && (
           <Paper elevation={3} sx={{ p: 2, width: 300, ml: '70px', mt: 2 }}>
             <Typography variant="h6" gutterBottom>Friend Requests</Typography>
@@ -295,7 +319,6 @@ function Sidebar() {
         )}
       </Box>
 
-      {/* User Menu */}
       <Menu
         anchorEl={anchorEl}
         open={openUserMenu}
@@ -305,11 +328,11 @@ function Sidebar() {
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
         <Box sx={{ px: 2, py: 1 }}>
-          <Typography variant="subtitle1">Adolf</Typography>
-          <Typography variant="body2" color="text.secondary">Adolf@gmail.com</Typography>
+          <Typography variant="subtitle1">{currentUser?.userName || 'User Name'}</Typography>
+          <Typography variant="body2" color="text.secondary">{currentUser?.email || 'user@example.com'}</Typography>
         </Box>
         <Divider />
-        <MenuItem onClick={() => { setAnchorEl(null); navigate('/profile'); }}>
+        <MenuItem onClick={() => { setAnchorEl(null); navigate('/me'); }}>
           <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
           Profile
         </MenuItem>
@@ -332,7 +355,6 @@ function Sidebar() {
         </MenuItem>
       </Menu>
 
-      {/* Logout Confirm */}
       <Dialog open={openLogoutConfirm} onClose={cancelLogout}>
         <DialogTitle>Confirm Logout</DialogTitle>
         <DialogContent>
