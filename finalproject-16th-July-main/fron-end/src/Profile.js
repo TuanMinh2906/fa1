@@ -30,6 +30,14 @@ function Profile() {
   };
 
   useEffect(() => {
+    // ✅ Reset state khi userId thay đổi
+    setIsFriend(false);
+    setIsRequestSent(false);
+    setIsLoading(false);
+    setError('');
+    setPosts([]);
+    setUser(null);
+
     const fetchUser = async () => {
       try {
         const res = await fetch(`http://localhost:8003/api/users/${userId}`);

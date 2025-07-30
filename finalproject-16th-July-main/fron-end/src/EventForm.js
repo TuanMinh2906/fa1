@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Box, Button, TextField, Typography, MenuItem, Select, InputLabel,
-  FormControl, IconButton, CardContent, Dialog, Fade
+  Box, Button, TextField, Typography, FormControl,
+  IconButton, CardContent, Dialog, Fade, Select, MenuItem, InputLabel
 } from '@mui/material';
 import { Delete as DeleteIcon, Close as CloseIcon } from '@mui/icons-material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
@@ -16,7 +16,7 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
     contentBlocks: [],
   });
 
-  const [newBlock, setNewBlock] = useState({ type: 'text', data: '' });
+  const [newBlock, setNewBlock] = useState({ data: '' });
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingContent, setEditingContent] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -82,16 +82,16 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
   };
 
   const handleBlockChange = (e) => {
-    setNewBlock({ ...newBlock, data: e.target.value });
+    setNewBlock({ data: e.target.value });
   };
 
   const handleAddBlock = () => {
     if (newBlock.data.trim() === '') return;
     setFormData({
       ...formData,
-      contentBlocks: [...formData.contentBlocks, newBlock],
+      contentBlocks: [...formData.contentBlocks, { type: 'text', data: newBlock.data }],
     });
-    setNewBlock({ type: 'text', data: '' });
+    setNewBlock({ data: '' });
   };
 
   const handleRemoveBlock = (index) => {
@@ -108,7 +108,7 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
         ...formData,
         assignedDate: formData.assignedDate.toISOString(),
         contentBlocks: formData.contentBlocks.map(block => ({
-          type: block.type,
+          type: 'text',
           data: { text: block.data }
         })),
         calendarId,
@@ -146,15 +146,23 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
             label="Title"
             value={formData.title}
             onChange={handleChange('title')}
+            required
           />
 
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Subject"
-            value={formData.subject}
-            onChange={handleChange('subject')}
-          />
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Task Type</InputLabel>
+            <Select
+              value={formData.subject}
+              onChange={handleChange('subject')}
+              label="Task Type"
+              required
+            >
+              <MenuItem value="work">Work</MenuItem>
+              <MenuItem value="meeting">Meeting</MenuItem>
+              <MenuItem value="personal">Personal</MenuItem>
+              <MenuItem value="birthday">Birthday</MenuItem>
+            </Select>
+          </FormControl>
 
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
@@ -169,22 +177,8 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
 
           <Typography variant="subtitle1" sx={{ mt: 2 }}>Add Task</Typography>
 
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Task Type</InputLabel>
-            <Select
-              value={newBlock.type}
-              onChange={(e) => setNewBlock({ ...newBlock, type: e.target.value })}
-              label="Task Type"
-            >
-              <MenuItem value="text">Work</MenuItem>
-              <MenuItem value="code">Meeting</MenuItem>
-              <MenuItem value="page">Personal</MenuItem>
-              <MenuItem value="birthday">Birthday</MenuItem>
-            </Select>
-          </FormControl>
-
           <TextField
-            label="Task"
+            label="Task Content"
             fullWidth
             multiline
             rows={3}
@@ -200,18 +194,13 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
                 mt: 2,
                 p: 2,
                 borderLeft: '4px solid',
-                borderColor:
-                  block.type === 'text'
-                    ? 'primary.main'
-                    : block.type === 'code'
-                      ? 'secondary.main'
-                      : 'success.main',
+                borderColor: 'primary.main',
                 backgroundColor: '#f9f9f9',
                 borderRadius: 1,
                 position: 'relative',
               }}
             >
-              <Typography variant="subtitle2">[{block.type.toUpperCase()}]</Typography>
+              <Typography variant="subtitle2">[TEXT]</Typography>
 
               {editingIndex === idx ? (
                 <>

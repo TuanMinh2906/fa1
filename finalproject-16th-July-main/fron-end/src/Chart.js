@@ -21,7 +21,6 @@ const Chart = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Fetch all notes on component mount
   useEffect(() => {
     const fetchNotes = async () => {
       try {
@@ -48,14 +47,12 @@ const Chart = () => {
       await axios.patch(`http://localhost:8003/api/notes/${note._id}/toggle`, null, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      // Refetch all notes for reliable state
       const res2 = await axios.get(`http://localhost:8003/api/notes`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setEvents(res2.data);
 
-      if (!note.isDone) { // means it was just ticked now
-        // find new index
+      if (!note.isDone) {
         const newIndex = res2.data.findIndex(n => n._id === note._id);
         setSelectedEventIndex(newIndex);
         setConfirmDialogOpen(true);
@@ -109,14 +106,13 @@ const Chart = () => {
   const pieColors = ['#1976d2', '#e53935'];
 
   const formatDate = (d) => {
-  const dt = new Date(d);
-  return isNaN(dt.getTime()) ? 'Invalid' : dt.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-};
-
+    const dt = new Date(d);
+    return isNaN(dt.getTime()) ? 'Invalid' : dt.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   const renderEventRow = (event, idx) => (
     <Paper key={event._id} sx={{
@@ -144,6 +140,14 @@ const Chart = () => {
         </Grid>
         <Grid item xs={12} sm={5}>
           <Typography variant="body2"><Category fontSize="small" /> {event.subject}</Typography>
+
+          {event.contentBlocks?.length > 0 && (
+            <Typography variant="body2" sx={{ mt: 1 }} color="text.secondary">
+              📝 {typeof event.contentBlocks[0]?.data === 'object'
+                ? event.contentBlocks[0]?.data?.text?.slice(0, 100)
+                : String(event.contentBlocks[0]?.data).slice(0, 100)}...
+            </Typography>
+          )}
         </Grid>
         <Grid item xs={12} sm={3} display="flex" justifyContent={isMobile ? 'flex-start' : 'flex-end'}>
           <Button variant="outlined" size="small" onClick={() => setModalEvent(event)}>View</Button>
@@ -186,7 +190,7 @@ const Chart = () => {
         <Typography variant="h6" gutterBottom>📈 Completion Ratio</Typography>
         <PieChart width={350} height={300}>
           <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={100} label isAnimationActive>
-            {pieData.map((entry,i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
+            {pieData.map((entry, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
           </Pie>
           <Tooltip />
           <Legend />
@@ -196,19 +200,44 @@ const Chart = () => {
       {loading && <Box textAlign="center"><CircularProgress /></Box>}
 
       <Divider textAlign="left" sx={{ mb: 2 }}>🔴 Today's Events</Divider>
-      {todayEvents.map((e,i) => renderEventRow(e, events.findIndex(n=>n._id === e._id)))}
+      {todayEvents.map((e, i) => renderEventRow(e, events.findIndex(n => n._id === e._id)))}
 
       <Divider textAlign="left" sx={{ mt: 4, mb: 2 }}>📅 Other Events</Divider>
-      {otherEvents.map((e,i) => renderEventRow(e, events.findIndex(n=>n._id === e._id)))}
+      {otherEvents.map((e, i) => renderEventRow(e, events.findIndex(n => n._id === e._id)))}
 
       {/* View Modal */}
       <Dialog open={!!modalEvent} onClose={() => setModalEvent(null)} fullWidth maxWidth="sm">
         <DialogTitle>{modalEvent?.title}</DialogTitle>
         <DialogContent dividers>
           <Typography gutterBottom><b>Date:</b> {formatDate(modalEvent?.assignedDate)}</Typography>
-          <Typography gutterBottom><b>Task Type:</b> {modalEvent?.subject}</Typography>
+          <Typography gutterBottom><b>Subject:</b> {modalEvent?.subject}</Typography>
+
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="subtitle1" gutterBottom><b>Tasks:</b></Typography>
+
+          {modalEvent?.contentBlocks?.length > 0 ? (
+            modalEvent.contentBlocks.map((block, index) => (
+              <Box key={index} sx={{
+                mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1,
+                borderLeft: '4px solid',
+                borderColor:
+                  block.type === 'text' ? 'primary.main' :
+                    block.type === 'code' ? 'secondary.main' :
+                      'success.main'
+              }}>
+                <Typography variant="subtitle2" color="text.secondary">[{block.type?.toUpperCase()}]</Typography>
+                <Typography sx={{ whiteSpace: 'pre-line' }}>
+                  {typeof block.data === 'object' ? block.data?.text : block.data}
+                </Typography>
+              </Box>
+            ))
+          ) : (
+            <Typography>No tasks added.</Typography>
+          )}
         </DialogContent>
-        <DialogActions><Button onClick={() => setModalEvent(null)} variant="contained">Close</Button></DialogActions>
+        <DialogActions>
+          <Button onClick={() => setModalEvent(null)} variant="contained">Close</Button>
+        </DialogActions>
       </Dialog>
 
       {/* Confirm delete dialog */}
