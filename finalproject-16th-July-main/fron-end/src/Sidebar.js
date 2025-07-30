@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import {
   FaUser, FaSearch, FaUsers, FaBell,
-  FaChartPie, FaStickyNote, FaCube,
-  FaCalendarAlt, FaCog, FaSignOutAlt
+  FaChartPie, FaCalendarAlt, FaSignOutAlt
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -17,6 +16,7 @@ import Settings from '@mui/icons-material/Settings';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import PolicyIcon from '@mui/icons-material/Policy';
 import Logout from '@mui/icons-material/Logout';
+import Diversity3Icon from '@mui/icons-material/Diversity3';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function Sidebar() {
@@ -126,10 +126,8 @@ function Sidebar() {
     },
     { icon: FaBell, action: handleBellClick },
     { icon: FaChartPie, route: '/chart' },
-    { icon: FaStickyNote, route: '/group' },
-    { icon: FaCube },
-    { icon: FaCalendarAlt, route: '/calendar' },
-    { icon: FaCog }
+    { icon: Diversity3Icon, route: '/group' }, // Đã đổi từ FaStickyNote sang Diversity3Icon
+    { icon: FaCalendarAlt, route: '/calendar' }
   ];
 
   const getNoteMatches = async (queryText) => {
@@ -225,12 +223,15 @@ function Sidebar() {
             {icons.map(({ icon: Icon, route, action }, index) => (
               <motion.div
                 key={index}
-                onClick={(e) => {
-                  resetPanels();
-                  setSelectedIconIndex(index);
-                  if (action) action(e);
-                  if (route) navigate(route);
-                }}
+                onClick={async (e) => {
+                resetPanels();
+                setSelectedIconIndex(index);
+                if (action) await action(e);
+
+                if (route && route !== window.location.pathname) {
+                navigate(route);
+                }
+              }}
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.95 }}
                 initial={{ opacity: 0, x: -20 }}
@@ -270,80 +271,82 @@ function Sidebar() {
           </Box>
         </Box>
 
-        {/* Search & Notification Panels */}
+        {/* Panels */}
         <AnimatePresence>
-          {showSearchType && (
-            <motion.div
-              initial={{ x: -50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -50, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Paper elevation={3} sx={{ p: 2, width: 300, ml: '70px', mt: 2 }}>
-                <Typography variant="h6" gutterBottom>
-                  {showSearchType === 'general' ? 'Search Notes & Users' : 'Search Friends'}
-                </Typography>
-                <TextField
-                  label="Search..."
-                  fullWidth
-                  value={query}
-                  onChange={handleSearch}
-                  variant="outlined"
-                  size="small"
-                />
-                <Divider sx={{ my: 2 }} />
-                {searchResults.length > 0 ? (
-                  searchResults.map((item, index) => (
-                    <Box key={index} sx={{ mb: 1 }}>
-                      {item.type === 'note' && (
-                        <Typography variant="body2">📝 {item.name} - {item.date}</Typography>
-                      )}
-                      {item.type === 'user' && (
-                        <Box
-                          sx={{ cursor: 'pointer', '&:hover': { color: '#1976d2', textDecoration: 'underline' } }}
-                          onClick={() => navigate(`/profile/${item._id}`)}
-                        >
-                          <Typography variant="body2">👤 {item.userName} ({item.email})</Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  ))
-                ) : (
-                  <Typography variant="body2" color="text.secondary">No results found.</Typography>
-                )}
-              </Paper>
-            </motion.div>
-          )}
+  {showSearchType && (
+    <motion.div
+      initial={{ x: -50, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -50, opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      style={{ position: 'absolute', top: '20px', left: '70px', zIndex: 1100 }}
+    >
+      <Paper elevation={3} sx={{ p: 2, width: 300 }}>
+        <Typography variant="h6" gutterBottom>
+          {showSearchType === 'general' ? 'Search Notes & Users' : 'Search Friends'}
+        </Typography>
+        <TextField
+          label="Search..."
+          fullWidth
+          value={query}
+          onChange={handleSearch}
+          variant="outlined"
+          size="small"
+        />
+        <Divider sx={{ my: 2 }} />
+        {searchResults.length > 0 ? (
+          searchResults.map((item, index) => (
+            <Box key={index} sx={{ mb: 1 }}>
+              {item.type === 'note' && (
+                <Typography variant="body2">📝 {item.name} - {item.date}</Typography>
+              )}
+              {item.type === 'user' && (
+                <Box
+                  sx={{ cursor: 'pointer', '&:hover': { color: '#1976d2', textDecoration: 'underline' } }}
+                  onClick={() => navigate(`/profile/${item._id}`)}
+                >
+                  <Typography variant="body2">👤 {item.userName} ({item.email})</Typography>
+                </Box>
+              )}
+            </Box>
+          ))
+        ) : (
+          <Typography variant="body2" color="text.secondary">No results found.</Typography>
+        )}
+      </Paper>
+    </motion.div>
+  )}
 
-          {showNotificationPanel && (
-            <motion.div
-              initial={{ x: -50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -50, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Paper elevation={3} sx={{ p: 2, width: 300, ml: '70px', mt: 2 }}>
-                <Typography variant="h6" gutterBottom>Friend Requests</Typography>
-                <Divider sx={{ mb: 1 }} />
-                {friendRequests.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">No friend requests</Typography>
-                ) : (
-                  friendRequests.map(user => (
-                    <Box key={user._id} display="flex" alignItems="center" mb={1}>
-                      <Avatar src={user.profilePicture || 'https://via.placeholder.com/40'} sx={{ mr: 1 }} />
-                      <Box flexGrow={1}>
-                        <Typography>{user.userName}</Typography>
-                        <Typography variant="caption">{user.email}</Typography>
-                      </Box>
-                      <Button size="small" onClick={() => handleAccept(user._id)}>Accept</Button>
-                      <Button size="small" color="error" onClick={() => handleReject(user._id)}>Reject</Button>
-                    </Box>
-                  ))
-                )}
-              </Paper>
-            </motion.div>
-          )}
-        </AnimatePresence>
+  {showNotificationPanel && (
+    <motion.div
+      initial={{ x: -50, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -50, opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      style={{ position: 'absolute', top: '20px', left: '70px', zIndex: 1100 }}
+    >
+      <Paper elevation={3} sx={{ p: 2, width: 300 }}>
+        <Typography variant="h6" gutterBottom>Friend Requests</Typography>
+        <Divider sx={{ mb: 1 }} />
+        {friendRequests.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">No friend requests</Typography>
+        ) : (
+          friendRequests.map(user => (
+            <Box key={user._id} display="flex" alignItems="center" mb={1}>
+              <Avatar src={user.profilePicture || 'https://via.placeholder.com/40'} sx={{ mr: 1 }} />
+              <Box flexGrow={1}>
+                <Typography>{user.userName}</Typography>
+                <Typography variant="caption">{user.email}</Typography>
+              </Box>
+              <Button size="small" onClick={() => handleAccept(user._id)}>Accept</Button>
+              <Button size="small" color="error" onClick={() => handleReject(user._id)}>Reject</Button>
+            </Box>
+          ))
+        )}
+      </Paper>
+    </motion.div>
+  )}
+</AnimatePresence>
       </Box>
 
       <Menu

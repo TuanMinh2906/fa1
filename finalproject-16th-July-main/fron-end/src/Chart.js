@@ -109,9 +109,14 @@ const Chart = () => {
   const pieColors = ['#1976d2', '#e53935'];
 
   const formatDate = (d) => {
-    const dt = new Date(d);
-    return isNaN(dt.getTime()) ? 'Invalid' : dt.toLocaleString();
-  };
+  const dt = new Date(d);
+  return isNaN(dt.getTime()) ? 'Invalid' : dt.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
 
   const renderEventRow = (event, idx) => (
     <Paper key={event._id} sx={{

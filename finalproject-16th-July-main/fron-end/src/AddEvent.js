@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box, Button, Card, CardContent, TextField, Typography,
   MenuItem, Select, InputLabel, FormControl, IconButton
@@ -14,9 +14,34 @@ function AddEvent() {
     subject: '',
     assignedDate: null,
     contentBlocks: [],
+    assignedTo: [], 
   });
 
   const [newBlock, setNewBlock] = useState({ type: 'text', data: '' });
+  const [friends, setFriends] = useState([]);
+
+  // 🔐 Get token from localStorage
+  const token = localStorage.getItem('token');
+
+  useEffect(() => {
+  const fetchFriends = async () => {
+    try {
+      const res = await axios.get('http://localhost:8003/api/users/friends/list', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setFriends(res.data);
+    } catch (err) {
+      console.error('Error fetching friends:', err);
+      alert('Failed to load friends');
+    }
+  };
+
+  if (token) {
+    fetchFriends();
+  }
+}, [token]);
 
   const handleChange = (field) => (e) => {
     setFormData({ ...formData, [field]: e.target.value });
@@ -50,11 +75,15 @@ function AddEvent() {
     try {
       const payload = {
         ...formData,
-        userId: '64xxxxxxxxxxxxxxxxxxxxxx',    
-        calendarId: '65yyyyyyyyyyyyyyyyyyyy',  
+        calendarId: '65yyyyyyyyyyyyyyyyyyyy',
       };
 
-      const response = await axios.post('http://localhost:8003/api/notes', payload);
+      const response = await axios.post('http://localhost:8003/api/notes', payload, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
       console.log('Note created:', response.data);
       alert('Note created successfully!');
     } catch (err) {
@@ -92,6 +121,24 @@ function AddEvent() {
             />
           </LocalizationProvider>
 
+          {/* 👥 Assigned to friend */}
+          <FormControl fullWidth margin="normal">
+          <InputLabel>Assign to Friends</InputLabel>
+          <Select
+          multiple
+          value={formData.assignedTo}
+          onChange={handleChange('assignedTo')}
+          label="Assign to Friends"
+          >
+          {friends.map((friend) => (
+          <MenuItem key={friend._id} value={friend._id}>
+          {friend.userName} ({friend.email})
+          </MenuItem>
+          ))}
+        </Select>
+        </FormControl>
+
+          {/* 🧩 Content blocks */}
           <Box sx={{ mt: 3 }}>
             <Typography variant="h6">Add Task</Typography>
 
@@ -104,8 +151,8 @@ function AddEvent() {
               >
                 <MenuItem value="text">Work</MenuItem>
                 <MenuItem value="code">Meeting</MenuItem>
-                <MenuItem value="page">Personal</MenuItem>
-                <MenuItem value="page">Birthday</MenuItem>
+                <MenuItem value="personal">Personal</MenuItem>
+                <MenuItem value="birthday">Birthday</MenuItem>
               </Select>
             </FormControl>
 
@@ -124,7 +171,7 @@ function AddEvent() {
             </Button>
           </Box>
 
-          {/* List of blocks */}
+          {/* Render added blocks */}
           {formData.contentBlocks.map((block, idx) => (
             <Box
               key={idx}
@@ -147,26 +194,9 @@ function AddEvent() {
                 [{block.type.toUpperCase()}]
               </Typography>
 
-              {block.type === 'code' ? (
-                <Box
-                  component="pre"
-                  sx={{
-                    backgroundColor: '#272822',
-                    color: '#fff',
-                    padding: 2,
-                    borderRadius: 1,
-                    whiteSpace: 'pre-wrap',
-                    fontFamily: 'monospace',
-                    mt: 1,
-                  }}
-                >
-                  {block.data}
-                </Box>
-              ) : (
-                <Typography sx={{ mt: 1, whiteSpace: 'pre-line' }}>
-                  {block.data}
-                </Typography>
-              )}
+              <Typography sx={{ mt: 1, whiteSpace: 'pre-line' }}>
+                {block.data}
+              </Typography>
 
               <IconButton
                 onClick={() => handleRemoveBlock(idx)}

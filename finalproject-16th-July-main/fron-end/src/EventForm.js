@@ -12,7 +12,7 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
-    assignedDate: selectedDate || null,
+    assignedDate: null,
     contentBlocks: [],
   });
 
@@ -42,9 +42,17 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
         })),
       });
     } else if (selectedDate) {
+      const datePart = new Date(selectedDate);
+      const now = new Date();
+      datePart.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
       setFormData(prev => ({
         ...prev,
-        assignedDate: new Date(selectedDate),
+        assignedDate: datePart,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        assignedDate: new Date(),
       }));
     }
   }, [initialData, selectedDate]);
@@ -54,7 +62,23 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
   };
 
   const handleDateChange = (date) => {
-    setFormData({ ...formData, assignedDate: date });
+    if (!date) return;
+    const prevDate = formData.assignedDate;
+    const newDate = new Date(date);
+
+    if (prevDate) {
+      newDate.setHours(
+        prevDate.getHours(),
+        prevDate.getMinutes(),
+        prevDate.getSeconds(),
+        prevDate.getMilliseconds()
+      );
+    } else {
+      const now = new Date();
+      newDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+    }
+
+    setFormData({ ...formData, assignedDate: newDate });
   };
 
   const handleBlockChange = (e) => {
@@ -102,7 +126,6 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
         handleDialog('Success', '🎉 Note created successfully!');
       }
 
-      // ❌ XÓA onAddSuccess() khỏi đây
     } catch (err) {
       console.error('Error saving note:', err);
       handleDialog('Error', '❌ Failed to save note.');
@@ -283,7 +306,7 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
               onClick={() => {
                 setDialogOpen(false);
                 setTimeout(() => {
-                  onAddSuccess(); // ✅ Gọi sau khi dialog đóng
+                  onAddSuccess();
                 }, 300);
               }}
               variant="contained"

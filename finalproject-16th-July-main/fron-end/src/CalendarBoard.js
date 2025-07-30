@@ -11,6 +11,7 @@ import {
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseIcon from '@mui/icons-material/Close';
 import AddEventForm from './EventForm';
+import Sidebar from './Sidebar'; // ✅ THÊM VÀO ĐÂY
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Grow ref={ref} {...props} />;
@@ -194,107 +195,110 @@ function CalendarBoard() {
   };
 
   return (
-    <Box sx={{ marginLeft: { xs: 0, sm: '60px' }, padding: 3, minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
-      <Typography variant="h4" fontWeight="bold" color="primary" sx={{ mb: 3 }}>
-        Planova
-      </Typography>
+    <Box sx={{ display: 'flex' }}> 
+      <Sidebar />
+      <Box sx={{ flexGrow: 1, padding: 3, minHeight: '100vh', backgroundColor: '#f9f9f9',marginLeft: '60px'  }}>
+        <Typography variant="h4" fontWeight="bold" color="primary" sx={{ mb: 3 }}>
+          Planova
+        </Typography>
 
-      <Fade in={true} timeout={600}>
-        <Paper sx={{ p: 2, borderRadius: 2 }}>
-          <FullCalendar
-            plugins={[dayGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            events={events}
-            editable={true}
-            eventDrop={handleEventDrop}
-            dateClick={handleDateClick}
-            eventClick={handleEventClick}
-            displayEventTime={false}
-            headerToolbar={{ start: '', center: 'title', end: 'prev today next' }}
-            buttonText={{ today: 'Today' }}
-            eventContent={(arg) => (
-              <Box
-                sx={{
-                  px: 1,
-                  py: 0.5,
-                  borderRadius: 1,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  backgroundColor: 'primary.light',
-                  color: 'primary.dark',
-                  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                    boxShadow: 3,
-                    backgroundColor: 'primary.main',
-                    color: 'white',
-                  }
-                }}
-              >
-                {arg.event.title}
-              </Box>
-            )}
-          />
-        </Paper>
-      </Fade>
+        <Fade in={true} timeout={600}>
+          <Paper sx={{ p: 2, borderRadius: 2 }}>
+            <FullCalendar
+              plugins={[dayGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              events={events}
+              editable={true}
+              eventDrop={handleEventDrop}
+              dateClick={handleDateClick}
+              eventClick={handleEventClick}
+              displayEventTime={false}
+              headerToolbar={{ start: '', center: 'title', end: 'prev today next' }}
+              buttonText={{ today: 'Today' }}
+              eventContent={(arg) => (
+                <Box
+                  sx={{
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: 1,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    backgroundColor: 'primary.light',
+                    color: 'primary.dark',
+                    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                      boxShadow: 3,
+                      backgroundColor: 'primary.main',
+                      color: 'white',
+                    }
+                  }}
+                >
+                  {arg.event.title}
+                </Box>
+              )}
+            />
+          </Paper>
+        </Fade>
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth TransitionComponent={Transition}>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {selectedEvent?.title || 'Event Details'}
-          <Box>
-            <IconButton onClick={handleMenuOpen}><MoreVertIcon /></IconButton>
-            <IconButton onClick={handleClose}><CloseIcon fontSize="small" /></IconButton>
-            <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
-              <MenuItem onClick={() => { handleEdit(); handleMenuClose(); }}>Edit</MenuItem>
-              <MenuItem onClick={() => { handleDelete(); handleMenuClose(); }}>Delete</MenuItem>
-              <MenuItem onClick={() => { handleDuplicateWeek(); handleMenuClose(); }}>Duplicate to Week</MenuItem>
-            </Menu>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Typography gutterBottom><strong>Date:</strong> {new Date(selectedEvent?.date).toLocaleDateString()}</Typography>
-          <Typography gutterBottom><strong>Subject:</strong> {selectedEvent?.subject || 'None'}</Typography>
-          <Typography gutterBottom sx={{ mt: 2 }}><strong>Location:</strong> {selectedEvent?.location || 'N/A'}</Typography>
-          <Typography gutterBottom><strong>Attendees:</strong> {selectedEvent?.attendees || 'None'}</Typography>
-          <Typography gutterBottom><strong>Reminder:</strong> {selectedEvent?.reminder} mins</Typography>
-          <Typography gutterBottom><strong>All Day:</strong> {selectedEvent?.allDay ? 'Yes' : 'No'}</Typography>
-          <Typography gutterBottom sx={{ mt: 2 }}><strong>Tasks:</strong></Typography>
-          <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {selectedEvent?.description?.split('\n').filter(line => line.trim() !== '').map((line, idx) => (
-              <Paper
-                key={idx}
-                elevation={2}
-                sx={{
-                  p: 1.5,
-                  pl: 2,
-                  backgroundColor: 'grey.100',
-                  borderLeft: '4px solid',
-                  borderColor: 'primary.main',
-                  fontSize: 14
-                }}
-              >
-                {line}
-              </Paper>
-            ))}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} color="inherit">Close</Button>
-        </DialogActions>
-      </Dialog>
+        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth TransitionComponent={Transition}>
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {selectedEvent?.title || 'Event Details'}
+            <Box>
+              <IconButton onClick={handleMenuOpen}><MoreVertIcon /></IconButton>
+              <IconButton onClick={handleClose}><CloseIcon fontSize="small" /></IconButton>
+              <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
+                <MenuItem onClick={() => { handleEdit(); handleMenuClose(); }}>Edit</MenuItem>
+                <MenuItem onClick={() => { handleDelete(); handleMenuClose(); }}>Delete</MenuItem>
+                <MenuItem onClick={() => { handleDuplicateWeek(); handleMenuClose(); }}>Duplicate to Week</MenuItem>
+              </Menu>
+            </Box>
+          </DialogTitle>
+          <DialogContent dividers>
+            <Typography gutterBottom><strong>Date:</strong> {new Date(selectedEvent?.date).toLocaleDateString()}</Typography>
+            <Typography gutterBottom><strong>Subject:</strong> {selectedEvent?.subject || 'None'}</Typography>
+            <Typography gutterBottom sx={{ mt: 2 }}><strong>Location:</strong> {selectedEvent?.location || 'N/A'}</Typography>
+            <Typography gutterBottom><strong>Attendees:</strong> {selectedEvent?.attendees || 'None'}</Typography>
+            <Typography gutterBottom><strong>Reminder:</strong> {selectedEvent?.reminder} mins</Typography>
+            <Typography gutterBottom><strong>All Day:</strong> {selectedEvent?.allDay ? 'Yes' : 'No'}</Typography>
+            <Typography gutterBottom sx={{ mt: 2 }}><strong>Tasks:</strong></Typography>
+            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {selectedEvent?.description?.split('\n').filter(line => line.trim() !== '').map((line, idx) => (
+                <Paper
+                  key={idx}
+                  elevation={2}
+                  sx={{
+                    p: 1.5,
+                    pl: 2,
+                    backgroundColor: 'grey.100',
+                    borderLeft: '4px solid',
+                    borderColor: 'primary.main',
+                    fontSize: 14
+                  }}
+                >
+                  {line}
+                </Paper>
+              ))}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose} color="inherit">Close</Button>
+          </DialogActions>
+        </Dialog>
 
-      <Dialog open={addEventOpen} onClose={handleAddEventClose} maxWidth="sm" fullWidth TransitionComponent={Transition}>
-        <DialogTitle>{editMode ? 'Edit Event' : 'Add New Event'}</DialogTitle>
-        <DialogContent dividers>
-          <AddEventForm
-            selectedDate={selectedDate}
-            calendarId={calendarId}
-            onClose={handleAddEventClose}
-            onAddSuccess={handleAddEventSuccess}
-            initialData={eventToEdit}
-          />
-        </DialogContent>
-      </Dialog>
+        <Dialog open={addEventOpen} onClose={handleAddEventClose} maxWidth="sm" fullWidth TransitionComponent={Transition}>
+          <DialogTitle>{editMode ? 'Edit Event' : 'Add New Event'}</DialogTitle>
+          <DialogContent dividers>
+            <AddEventForm
+              selectedDate={selectedDate}
+              calendarId={calendarId}
+              onClose={handleAddEventClose}
+              onAddSuccess={handleAddEventSuccess}
+              initialData={eventToEdit}
+            />
+          </DialogContent>
+        </Dialog>
+      </Box>
     </Box>
   );
 }
