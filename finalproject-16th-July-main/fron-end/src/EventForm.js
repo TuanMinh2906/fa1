@@ -8,12 +8,13 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axios from 'axios';
 
-function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initialData }) {
+function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initialData}) {
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
     assignedDate: null,
     contentBlocks: [],
+    assignedTo: [], // new field
   });
 
   const [newBlock, setNewBlock] = useState({ data: '' });
@@ -23,6 +24,7 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
   const [dialogTitle, setDialogTitle] = useState('');
   const [dialogContent, setDialogContent] = useState('');
   const token = localStorage.getItem('token');
+  const [friends, setFriends] = useState([]);
 
   const handleDialog = (title, content) => {
     setDialogTitle(title);
@@ -31,31 +33,51 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
   };
 
   useEffect(() => {
-    if (initialData) {
-      setFormData({
-        title: initialData.title || '',
-        subject: initialData.subject || '',
-        assignedDate: initialData.assignedDate ? new Date(initialData.assignedDate) : new Date(),
-        contentBlocks: (initialData.contentBlocks || []).map(block => ({
-          ...block,
-          data: typeof block.data === 'object' && block.data?.text ? block.data.text : block.data
-        })),
-      });
-    } else if (selectedDate) {
-      const datePart = new Date(selectedDate);
-      const now = new Date();
-      datePart.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
-      setFormData(prev => ({
-        ...prev,
-        assignedDate: datePart,
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        assignedDate: new Date(),
-      }));
+  if (initialData) {
+    setFormData({
+      title: initialData.title || '',
+      subject: initialData.subject || '',
+      assignedDate: initialData.assignedDate ? new Date(initialData.assignedDate) : new Date(),
+      contentBlocks: (initialData.contentBlocks || []).map(block => ({
+        ...block,
+        data: typeof block.data === 'object' && block.data?.text ? block.data.text : block.data
+      })),
+      assignedTo: initialData.participants?.map(p => p._id) || [], // 🔹 map đúng field backend
+    });
+  } else if (selectedDate) {
+    const datePart = new Date(selectedDate);
+    const now = new Date();
+    datePart.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+    setFormData(prev => ({
+      ...prev,
+      assignedDate: datePart,
+    }));
+  } else {
+    setFormData(prev => ({
+      ...prev,
+      assignedDate: new Date(),
+    }));
+  }
+}, [initialData, selectedDate]);
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const res = await axios.get('http://localhost:8003/api/users/friends/list', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setFriends(res.data);
+      } catch (err) {
+        console.error('Error fetching friends:', err);
+        alert('Failed to load friends');
+      }
+    };
+  
+    if (token) {
+      fetchFriends();
     }
-  }, [initialData, selectedDate]);
+  }, [token]);
 
   const handleChange = (field) => (e) => {
     setFormData({ ...formData, [field]: e.target.value });
@@ -100,37 +122,41 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
     setFormData({ ...formData, contentBlocks: updated });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
 
-    try {
-      const payload = {
-        ...formData,
-        assignedDate: formData.assignedDate.toISOString(),
-        contentBlocks: formData.contentBlocks.map(block => ({
-          type: 'text',
-          data: { text: block.data }
-        })),
-        calendarId,
-      };
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-      if (initialData?.id) {
-        await axios.put(`http://localhost:8003/api/notes/${initialData.id}`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        handleDialog('Success', '✔️ Note updated successfully!');
-      } else {
-        await axios.post('http://localhost:8003/api/notes', payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        handleDialog('Success', '🎉 Note created successfully!');
-      }
+  try {
+    const payload = {
+      ...formData,
+      assignedDate: formData.assignedDate.toISOString(),
+      participants: formData.assignedTo, 
+      contentBlocks: formData.contentBlocks.map(block => ({
+        type: 'text',
+        data: { text: block.data }
+      })),
+      calendarId,
+    };
 
-    } catch (err) {
-      console.error('Error saving note:', err);
-      handleDialog('Error', '❌ Failed to save note.');
+    delete payload.assignedTo; 
+
+    if (initialData?.id) {
+      await axios.put(`http://localhost:8003/api/notes/${initialData.id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      handleDialog('Success', '✔️ Note updated successfully!');
+    } else {
+      await axios.post('http://localhost:8003/api/notes', payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      handleDialog('Success', '🎉 Note created successfully!');
     }
-  };
+
+  } catch (err) {
+    console.error('Error saving note:', err);
+    handleDialog('Error', '❌ Failed to save note.');
+  }
+};
 
   return (
     <>
@@ -161,6 +187,22 @@ function AddEventForm({ selectedDate, calendarId, onClose, onAddSuccess, initial
               <MenuItem value="meeting">Meeting</MenuItem>
               <MenuItem value="personal">Personal</MenuItem>
               <MenuItem value="birthday">Birthday</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Assign to Friends</InputLabel>
+            <Select
+              multiple
+              value={formData.assignedTo}
+              onChange={handleChange('assignedTo')}
+              label="Assign to Friends"
+            >
+              {friends.map((friend) => (
+                <MenuItem key={friend._id} value={friend._id}>
+                  {friend.userName} ({friend.email})
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 

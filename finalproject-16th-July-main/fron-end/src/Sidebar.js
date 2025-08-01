@@ -102,7 +102,6 @@ function Sidebar() {
   const icons = [
     {
       icon: FaUser,
-      route: '/me',
       action: async (e) => {
         setAnchorEl(e.currentTarget);
         await fetchCurrentUser();
@@ -223,6 +222,7 @@ function Sidebar() {
             {icons.map(({ icon: Icon, route, action }, index) => {
               const isActive =
                 (route && window.location.pathname.startsWith(route)) ||
+                (index === 0 && openUserMenu) ||
                 (index === 1 && showSearchType === 'general') ||
                 (index === 2 && showSearchType === 'friends') ||
                 (index === 3 && showNotificationPanel);
@@ -287,7 +287,7 @@ function Sidebar() {
               transition={{ duration: 0.3 }}
               style={{ position: 'absolute', top: '20px', left: '70px', zIndex: 1100 }}
             >
-              <Paper elevation={3} sx={{ p: 2, width: 300 }}>
+              <Paper elevation={3} sx={{ p: 2, width: 460 }}>
                 <Typography variant="h6" gutterBottom>
                   {showSearchType === 'general' ? 'Search Notes & Users' : 'Search Friends'}
                 </Typography>
@@ -331,7 +331,7 @@ function Sidebar() {
               transition={{ duration: 0.3 }}
               style={{ position: 'absolute', top: '20px', left: '70px', zIndex: 1100 }}
             >
-              <Paper elevation={3} sx={{ p: 2, width: 300 }}>
+              <Paper elevation={3} sx={{ p: 2, width: 400 }}>
                 <Typography variant="h6" gutterBottom>Friend Requests</Typography>
                 <Divider sx={{ mb: 1 }} />
                 {friendRequests.length === 0 ? (

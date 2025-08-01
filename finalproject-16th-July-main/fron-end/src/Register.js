@@ -51,7 +51,7 @@ function Register() {
 
       if (response.ok) {
         alert('Registration successful!');
-        navigate('/');
+        navigate('/login');
       } else {
         alert(data.message || 'Registration failed.');
       }
@@ -107,15 +107,38 @@ function Register() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            fullWidth
-            sx={{ mt: 2 }}
-          >
-            Register
-          </Button>
+
+          <Box display="flex" flexDirection="column" alignItems="center" mt={2}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              sx={{ width: '75%', mb: 1 }}
+            >
+              Register
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              sx={{ width: '75%' }}
+              onClick={() => navigate('/home')}
+            >
+              Back to Homepage
+            </Button>
+          </Box>
+
+
+          {/* Dòng login */}
+          <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+            Already have an account?{' '}
+            <span
+              style={{ color: '#1976d2', cursor: 'pointer' }}
+              onClick={() => navigate('/login')}
+            >
+              Login
+            </span>
+          </Typography>
         </form>
       </Paper>
     </Container>

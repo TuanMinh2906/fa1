@@ -46,7 +46,7 @@ const handleGoogleLogin = async (req, res) => {
         message: 'Login successful',
         token,
         user: {
-            id: user._id,
+            _id: user._id,
             name: user.userName,
             email: user.email,
             avatar: user.profilePicture,

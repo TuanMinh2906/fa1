@@ -17,11 +17,11 @@ function GoogleLoginGemini() {
           access_token: tokenResponse.access_token,
         });
 
-        const { token, userId, calendarId } = backendRes.data;
+        const { token, user, calendarId } = backendRes.data;
 
         // Store JWT and user info in localStorage
         localStorage.setItem('token', token);
-        localStorage.setItem('userId', userId);
+        localStorage.setItem('userId', user._id);
         localStorage.setItem('calendarId', calendarId);
 
         // Optional: fetch and show user profile info from Google

@@ -19,6 +19,7 @@ const noteSchema = new mongoose.Schema({
     isDone: { type: Boolean, default: false }, // 👈 Thêm dòng này
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     calendarId: { type: mongoose.Schema.Types.ObjectId, ref: 'Calendar', required: true },
+    participants: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}]
 });
 
 noteSchema.virtual('assignedDay').get(function () {
