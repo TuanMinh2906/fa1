@@ -11,7 +11,7 @@ import {
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseIcon from '@mui/icons-material/Close';
 import AddEventForm from './EventForm';
-import Sidebar from './Sidebar'; 
+import Sidebar from './Sidebar';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Grow ref={ref} {...props} />;
@@ -47,7 +47,7 @@ function CalendarBoard() {
         date: new Date(note.assignedDate).toLocaleDateString('en-CA'),
         description: note.content || '',
         location: note.location || '',
-        attendees: note.attendees || '',
+        participants: note.participants || [],
         reminder: note.reminder || 10,
         allDay: note.allDay !== undefined ? note.allDay : true,
         category: note.subject || 'General',
@@ -98,7 +98,7 @@ function CalendarBoard() {
         ).join('\n') || 'No description',
         date: new Date(note.assignedDate).toISOString().split('T')[0],
         location: note.location || '',
-        attendees: note.attendees || '',
+        participants: note.participants || [],
         reminder: note.reminder || 10,
         allDay: note.allDay !== undefined ? note.allDay : true,
         subject: note.subject || 'None',
@@ -109,6 +109,7 @@ function CalendarBoard() {
       console.error('Failed to load event details:', err);
     }
   };
+
 
   const handleClose = () => {
     setOpen(false);
@@ -157,7 +158,7 @@ function CalendarBoard() {
           assignedDate: isoDate,
           contentBlocks: selectedEvent.contentBlocks,
           location: selectedEvent.location,
-          attendees: selectedEvent.attendees,
+          participants: selectedEvent.participants,
           subject: selectedEvent.subject,
           reminder: selectedEvent.reminder,
           allDay: selectedEvent.allDay,
@@ -195,9 +196,9 @@ function CalendarBoard() {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}> 
+    <Box sx={{ display: 'flex' }}>
       <Sidebar />
-      <Box sx={{ flexGrow: 1, padding: 3, minHeight: '100vh', backgroundColor: '#f9f9f9',marginLeft: '60px'  }}>
+      <Box sx={{ flexGrow: 1, padding: 3, minHeight: '100vh', backgroundColor: '#f9f9f9', marginLeft: '60px' }}>
         <Typography variant="h4" fontWeight="bold" color="primary" sx={{ mb: 3 }}>
           Planova
         </Typography>
@@ -258,7 +259,16 @@ function CalendarBoard() {
             <Typography gutterBottom><strong>Date:</strong> {new Date(selectedEvent?.date).toLocaleDateString()}</Typography>
             <Typography gutterBottom><strong>Subject:</strong> {selectedEvent?.subject || 'None'}</Typography>
             <Typography gutterBottom sx={{ mt: 2 }}><strong>Location:</strong> {selectedEvent?.location || 'N/A'}</Typography>
-            <Typography gutterBottom><strong>Attendees:</strong> {selectedEvent?.attendees || 'None'}</Typography>
+
+            <Typography gutterBottom>
+              <strong>Participants:</strong>{' '}
+              {Array.isArray(selectedEvent?.participants) && selectedEvent.participants.length > 0
+                ? selectedEvent.participants.map((p, i) => (
+                  <span key={i}>{p.username || p.email || p._id}{i < selectedEvent.participants.length - 1 ? ', ' : ''}</span>
+                ))
+                : 'None'}
+            </Typography>
+
             <Typography gutterBottom><strong>Reminder:</strong> {selectedEvent?.reminder} mins</Typography>
             <Typography gutterBottom><strong>All Day:</strong> {selectedEvent?.allDay ? 'Yes' : 'No'}</Typography>
             <Typography gutterBottom sx={{ mt: 2 }}><strong>Tasks:</strong></Typography>
